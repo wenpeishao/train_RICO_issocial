@@ -1,0 +1,34 @@
+# train_RICO_issocial.sub
+# HTCondor submit file for training keyboard detection
+
+# Specify the shell script as the executable
+executable = /home/wshao33/train_RICO_issocial.sh
+
+# Log, error, and output files
+log = train_RICO_issocial$(Cluster)_$(Process).log
+error = train_RICO_issocial.sub_$(Cluster)_$(Process).err
+output = train_RICO_issocial.sub_$(Cluster)_$(Process).out
+
+# Request resources
+request_gpus = 1
++WantGPULab = true
++GPUJobLength = "short"
+request_cpus = 10
+request_memory = 32GB        
+request_disk = 150GB         
+
+# Require execute servers that can access /staging
+Requirements = (Target.HasCHTCStaging == true)
+
+initialdir = /home/wshao33/
+
+
+# No large data files in transfer_input_files as they are staged
+transfer_input_files = train_RICO_issocial.py, train_RICO_issocial.sh
+
+# Ensure the output files are transferred back after the job completes
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+
+# Submit a single job
+queue
