@@ -11,18 +11,13 @@ import torch.optim as optim
 import numpy as np
 import pandas as pd
 from PIL import Image
-from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from torchvision import models, transforms
 
 # Define paths based on the bash script setup
 ui_details_path = './ui_details_updated.csv'  # CSV file containing UI details and labels
 images_dir = './combined/combined/'   # Directory containing the UI images
-
-# Function to print GPU memory usage for debugging
-def print_gpu_memory():
-    print(f"Allocated: {torch.cuda.memory_allocated(device) / (1024 ** 3):.2f} GB")
-    print(f"Cached: {torch.cuda.memory_reserved(device) / (1024 ** 3):.2f} GB")
 
 # Load the UI details
 ui_details_df = pd.read_csv(ui_details_path)
@@ -65,8 +60,7 @@ train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-# Reduce batch size to lower memory usage
-train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)
+train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)  # Adjusted batch size to reduce memory usage
 val_loader = DataLoader(val_ds, batch_size=16, shuffle=False)
 
 # Define the model (Pretrained ResNet50)
@@ -89,13 +83,11 @@ model = nn.DataParallel(model, device_ids=[0, 1, 2, 3])
 criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
-# Enable mixed precision training
-scaler = torch.cuda.amp.GradScaler()
-
 # Training and evaluation loop
 print("Starting training...")
 num_epochs = 10
 best_auc = 0.0
+best_auprc = 0.0
 best_model_state = None
 
 for epoch in range(num_epochs):
@@ -108,20 +100,14 @@ for epoch in range(num_epochs):
         target = target.to(device).float().view(-1)  # Ensure target is a 1D float tensor
 
         optimizer.zero_grad()
-
-        # Use mixed precision for forward and backward pass
-        with torch.cuda.amp.autocast():
-            output = model(data)
-            loss = criterion(output.view(-1), target)
-
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        output = model(data)
+        loss = criterion(output.view(-1), target)
+        loss.backward()
+        optimizer.step()
 
         running_loss += loss.item()
 
     print(f"Epoch {epoch+1}/{num_epochs} - Training loss: {running_loss / len(train_loader):.4f}")
-    print_gpu_memory()  # Print GPU memory usage after each epoch
 
     # Evaluation phase
     model.eval()
@@ -136,19 +122,21 @@ for epoch in range(num_epochs):
             val_outputs.extend(output.view(-1).cpu().numpy())
             val_targets.extend(target.cpu().numpy())
 
-    # Calculate AUC for the current epoch
+    # Calculate AUC and AUPRC for the current epoch
     auc = roc_auc_score(val_targets, val_outputs)
-    print(f"Epoch {epoch+1}/{num_epochs} - Validation AUC: {auc:.4f}")
+    auprc = average_precision_score(val_targets, val_outputs)
+    print(f"Epoch {epoch+1}/{num_epochs} - Validation AUC: {auc:.4f} - Validation AUPRC: {auprc:.4f}")
 
-    # Save best model based on AUC
-    if auc > best_auc:
-        best_auc = auc
+    # Save best model based on AUC and AUPRC
+    if auc > best_auc or auprc > best_auprc:
+        best_auc = max(auc, best_auc)
+        best_auprc = max(auprc, best_auprc)
         best_model_state = model.state_dict()
-        print(f"Best model updated with AUC: {best_auc:.4f}")
+        print(f"Best model updated with AUC: {best_auc:.4f} and AUPRC: {best_auprc:.4f}")
 
 # Save the best model state to a file
 if best_model_state is not None:
     torch.save(best_model_state, './best_resnet_finetune.pth')
-    print(f"Best model saved with AUC: {best_auc:.4f}")
+    print(f"Best model saved with AUC: {best_auc:.4f} and AUPRC: {best_auprc:.4f}")
 
 print("Training completed successfully.")

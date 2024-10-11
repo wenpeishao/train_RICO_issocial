@@ -75,4 +75,5 @@ rm -rf combined/
 echo "Deactivating environment and cleanup..."
 conda deactivate
 rm -rf $ENVDIR
+rm -f rico-analysis.tar.gz
 echo "Environment deactivated and cleaned up."
