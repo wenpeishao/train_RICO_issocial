@@ -15,6 +15,10 @@ from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_sco
 from torch.utils.data import TensorDataset, DataLoader, random_split
 from torchvision import models, transforms
 
+# SSL fix for certificate issues
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 # Define paths based on the bash script setup
 ui_details_path = './ui_details_updated.csv'  # CSV file containing UI details and labels
 images_dir = './combined/combined/'   # Directory containing the UI images
@@ -60,12 +64,13 @@ train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)  # Adjusted batch size to reduce memory usage
-val_loader = DataLoader(val_ds, batch_size=16, shuffle=False)
+train_loader = DataLoader(train_ds, batch_size=8, shuffle=True)  # Adjusted batch size to reduce memory usage
+val_loader = DataLoader(val_ds, batch_size=8, shuffle=False)
 
-# Define the model (Pretrained ResNet50)
+# Define the model (Pretrained ResNet50 using weights argument)
 print("Loading the ResNet50 model...")
-model = models.resnet50(pretrained=True)
+from torchvision.models import ResNet50_Weights
+model = models.resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
 
 # Modify the classifier for binary classification
 num_ftrs = model.fc.in_features
