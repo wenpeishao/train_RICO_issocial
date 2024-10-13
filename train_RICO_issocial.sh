@@ -57,7 +57,7 @@ unzip -o ui_layout_vectors.zip -d combined/
 
 # Remove zip files to free up space
 echo "Removing compressed files to free up space..."
-rm -f unique_uis.tar.gz traces.tar.gz ui_layout_vectors.zip
+rm -f unique_uis.tar.gz traces.tar.gz ui_layout_vectors.zip 
 
 # Verify the extracted contents
 echo "Listing contents of the combined directory..."
@@ -70,6 +70,7 @@ python3 train_RICO_issocial.py
 # Clean up any large files after the job completes to avoid unnecessary file transfers
 echo "Cleaning up extracted files..."
 rm -rf combined/
+rm ui_details_updated.csv
 
 # Deactivate and clean up the environment if necessary
 echo "Deactivating environment and cleanup..."

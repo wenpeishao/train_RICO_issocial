@@ -1,0 +1,6 @@
+which: no python in ((null))
+which: no python in ((null))
+tar: Ignoring unknown extended header keyword 'SCHILY.dev'
+tar: Ignoring unknown extended header keyword 'SCHILY.ino'
+tar: Ignoring unknown extended header keyword 'SCHILY.nlink'
+/var/lib/condor/execute/slot1/dir_417765/train_RICO_issocial.sh: line 77: conda: command not found

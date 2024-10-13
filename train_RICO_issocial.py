@@ -64,8 +64,8 @@ train_size = int(0.8 * len(dataset))
 val_size = len(dataset) - train_size
 train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
-train_loader = DataLoader(train_ds, batch_size=8, shuffle=True)  # Adjusted batch size to reduce memory usage
-val_loader = DataLoader(val_ds, batch_size=8, shuffle=False)
+train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)  # Adjusted batch size to reduce memory usage
+val_loader = DataLoader(val_ds, batch_size=16, shuffle=False)
 
 # Define the model (Pretrained ResNet50 using weights argument)
 print("Loading the ResNet50 model...")

@@ -12,11 +12,10 @@ output = train_RICO_issocial.sub_$(Cluster)_$(Process).out
 # Request resources
 request_gpus = 1
 +WantGPULab = true
-+GPUJobLength = "short"
-+is_resumable = true
++GPUJobLength = "long"
 request_cpus = 10
-request_memory = 128GB        
-request_disk = 150GB         
+request_memory = 128GB
+request_disk = 150GB
 
 # Require execute servers that can access /staging
 Requirements = (Target.HasCHTCStaging == true)
