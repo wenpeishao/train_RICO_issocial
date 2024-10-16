@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """train_RICO_issocial.py
 
-Script for training and evaluating a ResNet model on the RICO dataset to predict 'Is_Social'.
+Revised Script for training and evaluating a ResNet model on the RICO dataset to predict 'Is_Social' with:
+- Stratified sampling for train/test split
+- Upsampling the minority class in the training set
+- Saving predicted probabilities and generating a calibration plot
 """
 
 import os
@@ -12,8 +15,12 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score
-from torch.utils.data import TensorDataset, DataLoader, random_split
+from sklearn.calibration import calibration_curve
+from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
+from torch.utils.data import TensorDataset, DataLoader
 from torchvision import models, transforms
+import matplotlib.pyplot as plt
 
 # SSL fix for certificate issues
 import ssl
@@ -58,13 +65,32 @@ print(f"Loaded {len(features)} images successfully.")
 features_tensor = torch.stack(features) if features else torch.Tensor()
 labels_tensor = torch.stack(labels) if labels else torch.Tensor()
 
-# Create a dataset and dataloaders
-dataset = TensorDataset(features_tensor, labels_tensor)
-train_size = int(0.8 * len(dataset))
-val_size = len(dataset) - train_size
-train_ds, val_ds = random_split(dataset, [train_size, val_size])
+# Stratified train/test split
+X_train, X_test, y_train, y_test = train_test_split(features_tensor, labels_tensor, test_size=0.2, stratify=labels_tensor)
 
-train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)  # Adjusted batch size to reduce memory usage
+# Upsampling the minority class in the training set
+train_data = TensorDataset(X_train, y_train)
+train_labels = pd.Series(y_train.cpu().numpy())
+
+# Separate minority and majority classes
+minority_class = train_labels[train_labels == 1]
+majority_class = train_labels[train_labels == 0]
+
+# Upsample minority class
+minority_upsampled = resample(minority_class,
+                              replace=True,
+                              n_samples=len(majority_class),
+                              random_state=42)
+
+# Concatenate back the upsampled minority class and majority class
+X_train_upsampled = torch.cat((X_train[minority_upsampled.index], X_train[majority_class.index]), dim=0)
+y_train_upsampled = torch.cat((y_train[minority_upsampled.index], y_train[majority_class.index]), dim=0)
+
+# Create the dataset and dataloaders
+train_ds = TensorDataset(X_train_upsampled, y_train_upsampled)
+val_ds = TensorDataset(X_test, y_test)
+
+train_loader = DataLoader(train_ds, batch_size=16, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=16, shuffle=False)
 
 # Define the model (Pretrained ResNet50 using weights argument)
@@ -94,6 +120,7 @@ num_epochs = 10
 best_auc = 0.0
 best_auprc = 0.0
 best_model_state = None
+all_pred_probs = []  # To store predicted probabilities for calibration plot
 
 for epoch in range(num_epochs):
     # Training phase
@@ -102,7 +129,7 @@ for epoch in range(num_epochs):
     for batch in train_loader:
         data, target = batch
         data = data.to(device)
-        target = target.to(device).float().view(-1)  # Ensure target is a 1D float tensor
+        target = target.to(device).float().view(-1)
 
         optimizer.zero_grad()
         output = model(data)
@@ -126,6 +153,7 @@ for epoch in range(num_epochs):
             output = model(data)
             val_outputs.extend(output.view(-1).cpu().numpy())
             val_targets.extend(target.cpu().numpy())
+            all_pred_probs.extend(output.view(-1).cpu().numpy())  # Store predictions
 
     # Calculate AUC and AUPRC for the current epoch
     auc = roc_auc_score(val_targets, val_outputs)
@@ -143,5 +171,18 @@ for epoch in range(num_epochs):
 if best_model_state is not None:
     torch.save(best_model_state, './best_resnet_finetune.pth')
     print(f"Best model saved with AUC: {best_auc:.4f} and AUPRC: {best_auprc:.4f}")
+
+# Calibration plot
+print("Generating calibration plot...")
+fraction_of_positives, mean_predicted_value = calibration_curve(val_targets, all_pred_probs, n_bins=10)
+
+plt.plot(mean_predicted_value, fraction_of_positives, "s-", label="Model")
+plt.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+plt.xlabel("Mean predicted value")
+plt.ylabel("Fraction of positives")
+plt.title("Calibration plot")
+plt.legend()
+plt.savefig('calibration_plot.png')  # Save the plot as PNG
+plt.show()
 
 print("Training completed successfully.")
