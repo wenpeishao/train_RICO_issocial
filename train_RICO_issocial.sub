@@ -14,7 +14,7 @@ request_gpus = 1
 +WantGPULab = true
 +GPUJobLength = "long"
 request_cpus = 10
-request_memory = 128GB
+request_memory = 256GB
 request_disk = 150GB
 
 # Require execute servers that can access /staging

@@ -120,7 +120,6 @@ num_epochs = 10
 best_auc = 0.0
 best_auprc = 0.0
 best_model_state = None
-all_pred_probs = []  # To store predicted probabilities for calibration plot
 
 for epoch in range(num_epochs):
     # Training phase
@@ -143,21 +142,20 @@ for epoch in range(num_epochs):
 
     # Evaluation phase
     model.eval()
-    val_targets = []
-    val_outputs = []
+    val_targets_epoch = []
+    val_outputs_epoch = []
     with torch.no_grad():
         for batch in val_loader:
             data, target = batch
             data = data.to(device)
             target = target.to(device).float().view(-1)
             output = model(data)
-            val_outputs.extend(output.view(-1).cpu().numpy())
-            val_targets.extend(target.cpu().numpy())
-            all_pred_probs.extend(output.view(-1).cpu().numpy())  # Store predictions
+            val_outputs_epoch.extend(output.view(-1).cpu().numpy())
+            val_targets_epoch.extend(target.cpu().numpy())
 
     # Calculate AUC and AUPRC for the current epoch
-    auc = roc_auc_score(val_targets, val_outputs)
-    auprc = average_precision_score(val_targets, val_outputs)
+    auc = roc_auc_score(val_targets_epoch, val_outputs_epoch)
+    auprc = average_precision_score(val_targets_epoch, val_outputs_epoch)
     print(f"Epoch {epoch+1}/{num_epochs} - Validation AUC: {auc:.4f} - Validation AUPRC: {auprc:.4f}")
 
     # Save best model based on AUC and AUPRC
@@ -172,14 +170,41 @@ if best_model_state is not None:
     torch.save(best_model_state, './best_resnet_finetune.pth')
     print(f"Best model saved with AUC: {best_auc:.4f} and AUPRC: {best_auprc:.4f}")
 
-# Calibration plot
-print("Generating calibration plot...")
-fraction_of_positives, mean_predicted_value = calibration_curve(val_targets, all_pred_probs, n_bins=10)
+# **Load the best model and evaluate on the validation set to collect predictions**
+print("Loading the best model for evaluation...")
+model.load_state_dict(torch.load('./best_resnet_finetune.pth'))
+model.eval()
 
-plt.plot(mean_predicted_value, fraction_of_positives, "s-", label="Model")
+# Re-initialize lists to collect outputs
+val_targets = []
+val_outputs = []
+all_pred_probs = []
+
+with torch.no_grad():
+    for batch in val_loader:
+        data, target = batch
+        data = data.to(device)
+        target = target.to(device).float().view(-1)
+        output = model(data)
+        val_outputs.extend(output.view(-1).cpu().numpy())
+        val_targets.extend(target.cpu().numpy())
+        all_pred_probs.extend(output.view(-1).cpu().numpy())
+
+# **Save val_outputs, val_targets, and all_pred_probs to files**
+np.save('val_outputs.npy', val_outputs)
+np.save('val_targets.npy', val_targets)
+np.save('all_pred_probs.npy', all_pred_probs)
+print("Validation outputs, targets, and predicted probabilities saved to files.")
+
+# **Calibration plot with actual probabilities on x-axis and predicted probabilities on y-axis**
+print("Generating calibration plot...")
+fraction_of_positives, mean_predicted_value = calibration_curve(val_targets, val_outputs, n_bins=10)
+
+plt.figure()
+plt.plot(fraction_of_positives, mean_predicted_value, "s-", label="Model")
 plt.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
-plt.xlabel("Mean predicted value")
-plt.ylabel("Fraction of positives")
+plt.xlabel("Actual probabilities")
+plt.ylabel("Predicted probabilities")
 plt.title("Calibration plot")
 plt.legend()
 plt.savefig('calibration_plot.png')  # Save the plot as PNG
