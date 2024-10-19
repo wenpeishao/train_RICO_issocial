@@ -74,7 +74,6 @@ rm ui_details_updated.csv
 
 # Deactivate and clean up the environment if necessary
 echo "Deactivating environment and cleanup..."
-conda deactivate
 rm -rf $ENVDIR
 rm -f rico-analysis.tar.gz
 echo "Environment deactivated and cleaned up."

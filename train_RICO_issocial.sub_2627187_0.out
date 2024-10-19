@@ -1,0 +1,67 @@
+Current directory: /var/lib/condor/execute/slot1/dir_185119
+Copying Conda environment from /staging...
+Setting up Conda environment...
+Activating Conda environment...
+Environment activated. Current PATH: /var/lib/condor/execute/slot1/dir_185119/rico-analysis/bin:/usr/local/bin:/usr/bin
+Python 3.8.20
+Python not found after activation. Manually adding to PATH.
+Updated PATH: rico-analysis/bin:/var/lib/condor/execute/slot1/dir_185119/rico-analysis/bin:/usr/local/bin:/usr/bin
+/var/lib/condor/execute/slot1/dir_185119/rico-analysis/bin/python
+Copying dataset files from /staging...
+Extracting dataset files...
+Archive:  ui_layout_vectors.zip
+   creating: combined/ui_layout_vectors/
+  inflating: combined/ui_layout_vectors/README.txt  
+   creating: combined/__MACOSX/
+   creating: combined/__MACOSX/ui_layout_vectors/
+  inflating: combined/__MACOSX/ui_layout_vectors/._README.txt  
+  inflating: combined/ui_layout_vectors/ui_names.json  
+  inflating: combined/ui_layout_vectors/ui_vectors.npy  
+Removing compressed files to free up space...
+Listing contents of the combined directory...
+total 4244
+drwxr-xr-x    6 wshao33 wshao33    4096 Oct 17 10:54 .
+drwx------    7 wshao33 wshao33    4096 Oct 17 10:54 ..
+drwxrwxr-x    3 wshao33 wshao33    4096 Sep  6  2017 __MACOSX
+drwxr-xr-x    2 wshao33 wshao33 3854336 Mar  1  2019 combined
+drwxr-xr-x 9386 wshao33 wshao33  471040 Jul 25  2019 filtered_traces
+drwxr-xr-x    2 wshao33 wshao33    4096 Sep  6  2017 ui_layout_vectors
+Running the RICO analysis script...
+Data loaded. Number of UI samples: 66261
+Loading and processing images...
+Loaded 66261 images successfully.
+Loading the ResNet50 model...
+Starting training...
+Epoch 1/10 - Training loss: 0.2951
+Epoch 1/10 - Validation AUC: 0.8991 - Validation AUPRC: 0.5799
+Best model updated with AUC: 0.8991 and AUPRC: 0.5799
+Epoch 2/10 - Training loss: 0.0815
+Epoch 2/10 - Validation AUC: 0.9011 - Validation AUPRC: 0.6536
+Best model updated with AUC: 0.9011 and AUPRC: 0.6536
+Epoch 3/10 - Training loss: 0.0529
+Epoch 3/10 - Validation AUC: 0.8998 - Validation AUPRC: 0.6451
+Epoch 4/10 - Training loss: 0.0410
+Epoch 4/10 - Validation AUC: 0.9056 - Validation AUPRC: 0.6523
+Best model updated with AUC: 0.9056 and AUPRC: 0.6536
+Epoch 5/10 - Training loss: 0.0323
+Epoch 5/10 - Validation AUC: 0.9122 - Validation AUPRC: 0.7010
+Best model updated with AUC: 0.9122 and AUPRC: 0.7010
+Epoch 6/10 - Training loss: 0.0283
+Epoch 6/10 - Validation AUC: 0.9071 - Validation AUPRC: 0.6838
+Epoch 7/10 - Training loss: 0.0247
+Epoch 7/10 - Validation AUC: 0.9100 - Validation AUPRC: 0.6970
+Epoch 8/10 - Training loss: 0.0215
+Epoch 8/10 - Validation AUC: 0.9084 - Validation AUPRC: 0.6902
+Epoch 9/10 - Training loss: 0.0205
+Epoch 9/10 - Validation AUC: 0.9128 - Validation AUPRC: 0.7081
+Best model updated with AUC: 0.9128 and AUPRC: 0.7081
+Epoch 10/10 - Training loss: 0.0187
+Epoch 10/10 - Validation AUC: 0.9096 - Validation AUPRC: 0.6942
+Best model saved with AUC: 0.9128 and AUPRC: 0.7081
+Loading the best model for evaluation...
+Validation outputs, targets, and predicted probabilities saved to files.
+Generating calibration plot...
+Training completed successfully.
+Cleaning up extracted files...
+Deactivating environment and cleanup...
+Environment deactivated and cleaned up.
